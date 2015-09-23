@@ -9,6 +9,7 @@ class CloudFormationParser:
 
 	def __init__(self):
 		self.dynamo_db_resources = {}
+		self.dynamo_db_parameters = {}
 		self.dynamo_db_resource_list = []
 		self.processed = set()
 
@@ -22,6 +23,18 @@ class CloudFormationParser:
 	def parse_cloud_formation_template(self, file_name):
 		cloud_formation_json = self.load_json(file_name)
 		resources = cloud_formation_json['Resources']
+		parameters = cloud_formation_json['Parameters']
+
+		# resolve all default Parameters
+		for parameter_id in parameters.keys():
+			parameter = parameters[parameter_id]
+			try:
+				assert parameter["Default"] is not None
+				self.dynamo_db_parameters[parameter_id] = parameter["Default"]
+			
+			except AssertionError:
+				print "Parameter " + parameter_id + " does not have a default value."
+				sys.exit(-3)
 
 		# parse all the DynamoDb resources in the cloud formation template
 		for resource_id in resources.keys():
